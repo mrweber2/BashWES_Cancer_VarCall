@@ -468,7 +468,8 @@ do
 
         if [ $analysis == "VC_WITH_MUTECT" -o $analysis == "MUTECT_ALIGNMENT" -o $analysis == "MUTECT_VC" -o $analysis == "MUTECT"]
         then
-           echo "nohup $scriptdir/align_dedup_MuTect.sh $runfile ${sample} $FQ_TR1 $FQ_TR2 $FQ_NR1 $FQ_NR2 $TopOutputLogs/${sample}/log.alignDedup_MuTect.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.alignDedup_MuTect.${sample}" > $TopOutputLogs/${sample}/command.$analysis.${sample}
+           echo "nohup $scriptdir/align_dedup.sh $runfile ${sample} $FQ_TR1 $FQ_TR2 $FQ_NR1 $FQ_NR2 $TopOutputLogs/${sample}/log.alignDedup.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.alignDedup.${sample}" > $TopOutputLogs/${sample}/command.$analysis.${sample}
+	   echo "nohup $scriptdir/recal_varcall_MuTect_WES.sh $runfile ${sample} $TopOutputLogs/${sample}/log.recalVcall.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.recalVcall.${sample}" >> $TopOutputLogs/${sample}/command.$analysis.${sample}
         else
 	   echo -e "Program $0 stopped at line=$LINENO. \n\nMuTect Analysis not specified in runfile, or specified incorrectly as $analysis. For variant calling with MuTect2, set ANALYSIS in runfile to VC_WITH_MUTECT." | mail -s "[Task #${reportticket}]" "$redmine,$email"
 	   exit 1

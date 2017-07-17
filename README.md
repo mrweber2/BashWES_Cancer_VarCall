@@ -1,4 +1,4 @@
-January 2017
+July 2017
 
 1 Pipeline architecture and function
 ====================================
@@ -131,9 +131,12 @@ In a nutshell, the template below shows the various parameters and how they can 
   ADAPTERS=<path to the adapter file to be used with trimmomatic>
   REFGENOMEDIR=<path to the directory where all reference files and databases are stored>
   REFGENOME=<name of the reference genome file within REFGENOMEDIR. Example ucsc.hg19.fasta in the GATK bundle 2.8>
-  DBSNP=<name of the dbsnp file within REFGENOMEDIR. Example dbsnp\_138.hg19.vcf in the GATK bundle 2.8>
-  INDELDIR=<name of the directory within REFGENOMEDIR that contains a vcf file for each chromosome/contig specified by the CHRNAMES parameter. These files need to be named as: \*\${chr\_name}.vcf >
-  OMNI=<name of the omni variants file. Example: 1000G\_omni2.5.hg19.sites.vcf in the GATK bundle 2.8>
+  DBSNPDIR=<path to the directory where the dbSNP file is located>
+  DBSNP=<name of the dbsnp file within DBSNPDIR. Example dbsnp\_138.hg19.vcf in the GATK bundle 2.8>
+  INDELDIR=<path to the directory containing indel vcf files>
+  INDELSLIST=<space-separated list of indel vcf files within INDELDIR>
+  OMNI=<name of the omni variants file within REFGENOMEDIR. Example: 1000G\_omni2.5.hg19.sites.vcf in the GATK bundle 2.8>
+  INTERVALS=<>
 
 # Example entries for tools’ path in biocluster
   TRIMMOMATICDIR=/home/apps/trimmomatic/trimmomatic-0.33/trimmomatic-0.33.jar
@@ -168,8 +171,7 @@ In a nutshell, the template below shows the various parameters and how they can 
   ---------------------------------- | -------
   Quality Control check of the raw reads and trimming       |           `bash trim_input.sh <runfile>`
   Aligning reads to a reference and basic quality control thereafter |  `bash start.sh <runfile>*`
-  Complete variant calling, including the realignment stage    |       ` bash start.sh <runfile>`
-  Complete variant calling, without the realignment stage       |      ` bash start.sh <runfile>`
+  Complete MuTect2 variant calling, excluding the realignment stage  |       ` bash start.sh <runfile>`
   Resume execution after a failing job                    |            ` bash resumePartialExectuion.sh <path to the logs directory from the failed run of the workflow> <name of the task to be resubmitted- see section 2.5>`
 
 \+ Better to use nohup to run your analysis, as in: `nohup <script_name> <needed_file> > log.nohup` to be able to track the run quickly, and also log off freely afterwards.
@@ -203,7 +205,7 @@ The details of the remaining files of the repo are as in the table below:
   **Script**             |        **Description**
   ----------------|-------------- 
   `align_dedup.sh`          |      The script to carry out the alignment job
-  `recal_varcall_WES.sh`      |   The script to carry out recalibration and variant calling for whole exome jobs
+  `recal_varcall_WES.sh`      |   The script to carry out recalibration and MuTect2 variant calling for whole exome jobs
   `realign_varcall_by_chr.sh`  | The script to carry out the realignment, recalibration and variant calling jobs
   `merge_vcf.sh`            |      The script to merge the bams (we split the per-sample bams by chromosome/contig in the realignment /recalibration stage, and now we merge that)
   `joint_vcf.sh`             |     The script to carry out the joint variant calling job
@@ -223,7 +225,7 @@ The remaining files are not used as part of the variant calling pipeline of Figu
 3 Results
 =========
 
-The results from a typical run of the pipeline are organized according to the hierarchy shown in Figure \[3\] below. Overall, the `DELIVERYFOLDER` contains the key summarizing files of the run (the cleaned up bams, gvcfs and final vcf from joint calling; in addition to the summary reports regarding the quality of the data, and copies of the
+The results from a typical run of the pipeline are organized according to the hierarchy shown in Figure \[3\] below. Overall, the `DELIVERYFOLDER` contains the key summarizing files of the run (the cleaned up bams and final vcf; in addition to the summary reports regarding the quality of the data, and copies of the
 `sampleinformation` and `runfile` files). Messages from compute nodes are saved and mailed out by the MOM node. Each sample also has its own directory that contains the files generated after each stage. File access permissions are opened to group as the files are created in the pipeline. In Figure \[3\], a color coding schema is employed to differentiate the files that would be generated according to how the user specifies the `ANALYSIS` parameter in the `runfile`.
 
 ![](./media/image04.png){width="6.692716535433071in"

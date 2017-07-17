@@ -70,7 +70,7 @@ set -x
 
 SampleDir=$outputdir
 AlignDir=$outputdir/align
-RealignDir=$outputdir/realign
+RealignDir=$outputdir/recal
 VarcallDir=$outputdir/variant
 DeliveryDir=$rootdir/$deliverydir/$SampleName
 
@@ -84,7 +84,7 @@ realignedtumorbam=${SampleName}.tumor.realigned.bam                    # name of
 realignednormalbam=${SampleName}.realigned.bam                    # name of the realigned file
 recalibratedtumorbam=${SampleName}.tumor.recalibrated.bam              # name of the recalibrated file
 recalibratednormalbam=${SampleName}.recalibrated.bam              # name of the recalibrated file
-rawvariant=${SampleName}.raw.gvcf                          # name of the raw variant file
+rawvariant=${SampleName}.raw.vcf                          # name of the raw variant file
 
 set +x
 echo -e "\n\n##################################################################################" >&2 
@@ -196,7 +196,7 @@ do
       exit 1;
    fi
    recalparmsindels="${recalparmsindels} -knownSites ${indeldir}/${indelsFile}"  
-   realparms="${recalparmsindels} -known ${indeldir}/${indelsFile}"  
+   realparms="${realparms} -known ${indeldir}/${indelsFile}"  
 done
 
 recalparmsdbsnp="-knownSites ${dbsnpdir}/${dbsnp}"
@@ -209,7 +209,7 @@ echo -e "########### command one: executing GATK RealignerTargetCreator using kn
 echo -e "##################################################################################\n\n"
 set -x
 
-if [ $analysis == "VC_WITH_MUTECT" ]
+if [ $analysis == "MUTECT_WITH_REALIGN" ]
 then 
 	$javadir/java -Xmx8g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.jar\
        		-R $ref_local\
@@ -239,11 +239,9 @@ then
 	if [ ! -s ${SampleName}.realignTargetCreator.intervals ] 	
 	 then
        		echo -e "${SampleName}\tREALIGNMENT\tWARN\t${SampleName}.RealignTargetCreator.intervals is an empty file. Skipping Indel realignment cmd\n" >> $qctumorfile
-       		ln -s $dedupsortedtumorbam $RealignDir/$realignedtumorbam
         if [ ! -s ${SampleName}.realignTargetCreator.intervals ]       
 	 then
                 echo -e "${SampleName}\tREALIGNMENT\tWARN\t${SampleName}.RealignTargetCreator.intervals is an empty file. Skipping Indel realignment cmd\n" >> $qcnormalfile
-                ln -s $dedupsortednormalbam $RealignDir/$realignednormalbam
 	else 
 		set +x
 		echo -e "\n\n##################################################################################" 
@@ -477,10 +475,10 @@ set -x
 $javadir/java -Xmx16g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.jar \
 	 -T MuTect2 \
 	 -R $ref_local \
-	 --dbsnp $dbsnp_local \
+	 --dbsnp ${dbsnpdir}/${dbsnp} \
 	 -I:tumor $RealignDir/$recalibratedtumorbam \
          -I:normal $RealignDir/$recalibratednormalbam \
-	 --emitRefConfidence GVCF \
+#	 --emitRefConfidence GVCF \
 	 -gt_mode DISCOVERY \
 	 -A Coverage -A FisherStrand -A StrandOddsRatio -A HaplotypeScore -A MappingQualityRankSumTest -A QualByDepth -A RMSMappingQuality -A ReadPosRankSumTest \
 	 -stand_call_conf 30 \
@@ -535,7 +533,7 @@ echo -e "#############    DONE PROCESSING SAMPLE $SampleName"
 echo -e "##################################################################################\n\n"
 set -x
 
-MSG="GATK HaplotypeCaller finished successfully for ${SampleName}"
+MSG="MuTect2 finished successfully for ${SampleName}"
 echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.SUCCESS
 
 `find . -type d | xargs chmod -R 770`
