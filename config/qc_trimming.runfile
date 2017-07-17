@@ -1,0 +1,27 @@
+## Sample runfile for the analysis scenario: QC and reads trimming
+# To be used as:   bash trim_input.sh qc_trimming.runfile 
+# Please note that the parameters given here are the only ones required. If more parameters were given, they will simply be ignored. 
+
+## i/o
+SAMPLEINFORMATION=<path to the sampleinformation file>
+OUTPUTDIR=<path to the output directory>
+TMPDIR=<path to where temporary files are stored>
+EMAIL=<email address to send torque notifications to>
+REPORTTICKET=<redmine ticket number to send notifications to>
+
+## Alignment block parameters and Trimming options. 
+TRIMMOMATICPARAMS=:2:20:10 LEADING:5 TRAILING:5 MINLEN:25>
+
+## paths to resources and tools - See section 2.1 and 2.2
+ADAPTERS=<path to the adapter file to be used with trimmomatic>
+
+# Example entries for tools’ path in biocluster
+TRIMMOMATICDIR=/home/apps/trimmomatic/trimmomatic-0.33/trimmomatic-0.33.jar
+FASTQCDIR=/home/apps/fastqc/fastqc-0.11.4
+JAVADIR=/home/apps/java/jdk1.8.0_65/bin
+
+## pbs torque resources
+PBSNODES=<number of nodes>
+PBSCORES=<number of cores>
+PBSQUEUE=<name of the queue>
+PBSWALLTIME=<wall time>

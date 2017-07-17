@@ -1,0 +1,59 @@
+## Sample runfile for the analysis scenario: Complete variant calling WITH the realignment stage
+# To be used as:   bash start.sh vc_with_realign.runfile 
+# Please note that the parameters given here are the only ones required. If more parameters were given, they will simply be ignored.
+
+## i/o
+SAMPLEINFORMATION=<path to the sampleinformation file>
+OUTPUTDIR=<path to the output directory>
+DELIVERYFOLDER=<path where summary deliverables from the pipeline are stored. It is a subdirectory within the OUTPUTDIR>
+TMPDIR=<path to where temporary files are stored>
+SCRIPTDIR=<path to where the scripts of this repo are stored locally on the machine>
+EMAIL=<email address to send torque notifications to*>
+REPORTTICKET*=<redmine ticket number to send notifications to*>
+
+## choose the run case
+ANALYSIS=VC_WITH_REALIGNMENT
+
+## Read group information for the samples: namely, the Library, Platform technology,  and sequencing center name. It should be noted that the sample ID, platform unit (PU) and sample name (SM) are set by default to be the same sample name found in the sampleinformation file specified
+SAMPLELB=<The library>
+SAMPLEPL=<should be either ILLUMINA, SOLID, LS454, HELICOS or PACBIO>
+SAMPLECN=<Name of sequencing center producing the reads>
+## The tools to be used in this run of the pipeline (where a selection can be made)
+ALIGNERTOOL=<the tool to be used for the alignment stage of the pipeline. Can be either BWAMEM or NOVOALIGN. Only the respective INDEX and PARAMS need to be specified in the next block of the runfile>
+MARKDUPLICATESTOOL=<the tool to be used for marking duplicates in the pipeline. Can be any of these: samblaster, novosort or PICARD>
+
+
+## Alignment block parameters and Trimming options. 
+BWAINDEX=<Path to the indexed reference file for bwa, if it is the desired aligner >
+BWAMEMPARAMS=<optional parameters to bwa mem, if used as an aligner. Example: -k 32 -I 30,30>
+NOVOALIGNINDEX=<path to the indexed reference file for novoalign, if it is the desired aligner>
+NOVOALIGNPARAMS=<optional parameters to novoalign, if used as an aligner>
+CHRNAMES=<a colon (:) separated list of chromosome or contig names to split files by. Only these regions will be processed in the stages following the alignment> 
+
+## Quality thresholds (for reporting only, as the pipeline will continue with the next stage regardless of whether these thresholds were respected or not): 
+MAP_CUTOFF=<minimum mapping quality of reads to pass QC test after alignment>
+DUP_CUTOFF=<maximum duplication level in reads to pass QC test after alignment> 
+
+
+## paths to resources and tools - See section 2.1 and 2.2
+REFGENOMEDIR=<path to the directory where all reference files and databases are stored>
+REFGENOME=<name of the reference genome file within REFGENOMEDIR. Example ucsc.hg19.fasta in the GATK bundle 2.8>
+DBSNP=<name of the dbsnp file within REFGENOMEDIR. Example dbsnp_138.hg19.vcf in the GATK bundle 2.8>
+INDELDIR=<name of the directory within REFGENOMEDIR that contains a vcf file for each chromosome/contig specified by the CHRNAMES parameter. These files need to be named as: *${chr_name}.vcf >
+OMNI=<name of the omni variants file. Example: 1000G_omni2.5.hg19.sites.vcf in the GATK bundle 2.8>
+
+
+# Example entries for tools’ path in biocluster
+BWAMEMDIR=/home/apps/bwa/bwa-0.7.15
+NOVOCRAFTDIR=/home/apps/novocraft/novocraft-3.02 
+SAMBLASTERDIR=/home/apps/samblaster/samblaster-0.1.22/bin
+PICARDIR=/home/apps/picard-tools/picard-tools-2.4.1
+GATKDIR=/home/apps/gatk/gatk-3.6
+SAMDIR=/home/apps/samtools/samtools-1.3.1/bin
+JAVADIR=/home/apps/java/jdk1.8.0_65/bin
+
+## pbs torque resources
+PBSNODES=<number of nodes>
+PBSCORES=<number of cores>
+PBSQUEUE=<name of the queue>
+PBSWALLTIME=<wall time>
