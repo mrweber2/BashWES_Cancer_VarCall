@@ -3,7 +3,7 @@ July 2017
 1 Pipeline architecture and function
 ====================================
 
-This pipeline implements the [GATK's best practices](https://software.broadinstitute.org/gatk/best-practices/) for tumor/normal variant calling in Whole Exome Next Generation Sequencing datasets, given a cohort of samples.
+This pipeline is modified from the Bash WES variant calling pipeline found here: [BashWES_VarCall_BW](https://github.com/HPCBio/BashWES_VarCall_BW). We implement the [GATK's best practices](https://software.broadinstitute.org/gatk/best-practices/) for tumor/normal variant calling with MuTect2 in Whole Exome Next Generation Sequencing datasets, given a cohort of samples.
 
 In its latest version, 3.7, the best practices include the stages shown in Figure \[1\] below, which are:
 
@@ -12,18 +12,14 @@ In its latest version, 3.7, the best practices include the stages shown in Figur
 3.  Base recalibration (BQSR)
 4.  Variant calling with MuTect2
 
-These stages are implemented in this pipeline, with an optional “Indel Realignment” step (which was recommended in previous GATK best practices &lt; 3.6). With an optional additional stage of checking the quality of input data and trimming, the pipeline can also be run as: 
-* Alignment stage only, 
-* Complete variant calling with realignment (ANALYSIS=VC_WITH_REALIGNMENT), and 
-* Complete variant calling without realignment,
-depending on the user’s ANALYSIS setting.
+These stages are implemented in this pipeline, with an optional “Indel Realignment” step (which was recommended in previous GATK best practices &lt; 3.6).
 
 <span id="_5gqwfmpxrsjj"
-class="anchor"></span>![](./media/image05.png)
+class="anchor"></span>![](./media/BP_somatic_workflow_M2.png)
 
-Figure 1: Best Practices for Germline SNPs and Indels in Whole Genomes and Exomes
+Figure 1: Best Practices for tumor/normal variant calling in Whole Genomes and Exomes
 
-Under the hood, this pipeline splits and merges files at different stages to achieve optimal usage of resources. This parallelization of data processing is shown in Figure \[2\] below:
+Under the hood, this pipeline splits and merges files at different stages to achieve optimal usage of resources. This parallelization of data processing (OLD, will update) is shown in Figure \[2\] below:
 
 ![](./media/image01.png)
 
@@ -31,7 +27,7 @@ Figure 2: Pipeline details. Note: the processing can be split by individual sequ
 
 1.2. Workflow assumptions
 
-- Inputs are fastq not bam (the RESORTBAM os not active)
+- Inputs are fastq not bam (the RESORTBAM is not active)
 - Temporary files are not removed (the REMOVETEMPFILES is not active)
 - The AnisimovLauncher is used in this workflow
 - To allow for adapter trimming using trimmomatic, the following variables are needed in the runfile: SAMPLEINFORMATION, OUTPUTDIR, TMPDIR, ADAPTERS, FASTQCDIR, TRIMMOMATICDIR, in addition to PBS torque parameters: ALLOCATION, PBSCORES, PBSNODES, PBSQUEUE, PBSWALLTIME and EMAIL
@@ -57,6 +53,7 @@ Table 1: Pipeline tools
 |  Indel realignment  |         [GATK](https://software.broadinstitute.org/gatk/download/) |
 |  Base recalibration  |        [GATK](https://software.broadinstitute.org/gatk/download/) |
 |  Calling variants  |         GATK [HaplotypeCaller](https://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php) |
+|  Calling tumor/normal variants | GATK [MuTect2](https://software.broadinstitute.org/gatk/best-practices/mutect2.php)
 |  Joint calling of variants  | GATK ([GenotypeGVCFs](https://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_variantutils_GenotypeGVCFs.php) ) |
 |  Miscellaneous      |         [Samtools](http://samtools.github.io/).  Note: one alternative to samtools (and marking duplicates) is *sambamba*, but it is *not currently implemented* in the code.|
  
@@ -76,8 +73,6 @@ Password:
 
 wget -r ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37
 ```
-
-To achieve the parallelization of Figure \[2\] in the realignment/recalibration stages, the pipeline needs a separate vcf file for each chromosome/contig, and each should be named as: \*\${chr\_name}.vcf. If working with the GATK bundle, the sample script ([*splitVCF-by-chromosome.sh*](https://github.com/HPCBio/BW_VariantCalling/blob/ParameterSweep/splitVCF-by-chromosome.sh)) can be used to produce the needed files with some minor modifications (mainly, providing the right path to the referencedir, java and GenomeAnalysisTK.jar)
 
 2.3 User’s runfile and sample information files
 -----------------------------------------------
@@ -120,15 +115,12 @@ In a nutshell, the template below shows the various parameters and how they can 
   BWAMEMPARAMS=<optional parameters to bwa mem, if used as an aligner. Example: -k 32 -I 30,30>
   NOVOALIGNINDEX=<path to the indexed reference file for novoalign, if it is the desired aligner>
   NOVOALIGNPARAMS=<optional parameters to novoalign, if used as an aligner>
-  CHRNAMES=<a colon (:) separated list of chromosome or contig names to split files by. Only these regions will be processed in the stages following the alignment>
-  TRIMMOMATICPARAMS=<parameters to trimmomatic for trimming illumina reads. Example :2:20:10 LEADING:5 TRAILING:5 MINLEN:25>
 
 ## Quality thresholds (for reporting only, as the pipeline will continue with the next stage regardless of whether these thresholds were respected or not):
   MAP_CUTOFF=<minimum mapping quality of reads to pass QC test after alignment>
   DUP_CUTOFF=<maximum duplication level in reads to pass QC test after alignment>
 
 ## paths to resources and tools - See section 2.1 and 2.2
-  ADAPTERS=<path to the adapter file to be used with trimmomatic>
   REFGENOMEDIR=<path to the directory where all reference files and databases are stored>
   REFGENOME=<name of the reference genome file within REFGENOMEDIR. Example ucsc.hg19.fasta in the GATK bundle 2.8>
   DBSNPDIR=<path to the directory where the dbSNP file is located>
@@ -139,7 +131,6 @@ In a nutshell, the template below shows the various parameters and how they can 
   INTERVALS=<>
 
 # Example entries for tools’ path in biocluster
-  TRIMMOMATICDIR=/home/apps/trimmomatic/trimmomatic-0.33/trimmomatic-0.33.jar
   FASTQCDIR=/home/apps/fastqc/fastqc-0.11.4
   BWAMEMDIR=/home/apps/bwa/bwa-0.7.15
   NOVOCRAFTDIR=/home/apps/novocraft/novocraft-3.02
@@ -205,8 +196,7 @@ The details of the remaining files of the repo are as in the table below:
   **Script**             |        **Description**
   ----------------|-------------- 
   `align_dedup.sh`          |      The script to carry out the alignment job
-  `recal_varcall_WES.sh`      |   The script to carry out recalibration and MuTect2 variant calling for whole exome jobs
-  `realign_varcall_by_chr.sh`  | The script to carry out the realignment, recalibration and variant calling jobs
+  `recal_varcall_MuTect_WES.sh`      |   The script to carry out recalibration and MuTect2 variant calling for whole exome jobs
   `merge_vcf.sh`            |      The script to merge the bams (we split the per-sample bams by chromosome/contig in the realignment /recalibration stage, and now we merge that)
   `joint_vcf.sh`             |     The script to carry out the joint variant calling job
   `summary.sh `            |        The script to generate summaries about the last run of the pipeline (which jobs/samples failed/succeeded)
