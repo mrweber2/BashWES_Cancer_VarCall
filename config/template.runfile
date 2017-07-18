@@ -1,11 +1,7 @@
 ## i/o
 SAMPLEINFORMATION=<path to the sampleinformation file>
-
-
 OUTPUTDIR=<path to the output directory>
 DELIVERYFOLDER=<path where summary deliverables from the pipeline are stored. It is a subdirectory within the OUTPUTDIR>
-
-
 TMPDIR=<path to where temporary files are stored>
 SCRIPTDIR=<path to where the scripts of this repo are stored locally on the machine>
 EMAIL=<email address to send torque notifications to*>
@@ -13,8 +9,7 @@ REPORTTICKET=<redmine ticket number to send notifications to*>
 
 
 ## choose the run case
-ANALYSIS=<depending on the analysis type it can be {ANALYSIS=ALIGNMENT, or ANALYSIS=ALIGN or ANALYSIS=ALIGN_ONLY} for alignment only, {ANALYSIS=VC_WITH_REALIGNMENT} for complete variant calling with realignment, or anything else for complete variant calling without realignment>
-
+ANALYSIS=VC_WITH_MUTECT
 
 ## Read group information for the samples: namely, the Library, Platform technology,  and sequencing center name. It should be noted that the sample ID, platform unit (PU) and sample name (SM) are set by default to be the same sample name found in the sampleinformation file specified
 SAMPLELB=<The library>
@@ -30,8 +25,6 @@ BWAINDEX=<Path to the indexed reference file for bwa, if it is the desired align
 BWAMEMPARAMS=<optional parameters to bwa mem, if used as an aligner. Example: -k 32 -I 30,30>
 NOVOALIGNINDEX=<path to the indexed reference file for novoalign, if it is the desired aligner>
 NOVOALIGNPARAMS=<optional parameters to novoalign, if used as an aligner>
-CHRNAMES=<a colon (:) separated list of chromosome or contig names to split files by. Only these regions will be processed in the stages following the alignment> 
-TRIMMOMATICPARAMS=<parameters to trimmomatic for trimming illumina reads. Example :2:20:10 LEADING:5 TRAILING:5 MINLEN:25>
 
 
 ## Quality thresholds (for reporting only, as the pipeline will continue with the next stage regardless of whether these thresholds were respected or not): 
@@ -40,16 +33,18 @@ DUP_CUTOFF=<maximum duplication level in reads to pass QC test after alignment>
 
 
 ## paths to resources and tools - See section 2.1 and 2.2
-ADAPTERS=<path to the adapter file to be used with trimmomatic>
+INTERVALS=<>
 REFGENOMEDIR=<path to the directory where all reference files and databases are stored>
 REFGENOME=<name of the reference genome file within REFGENOMEDIR. Example ucsc.hg19.fasta in the GATK bundle 2.8>
+DBSNPDIR=<path to the directory where dbSNP variant file is stored>
 DBSNP=<name of the dbsnp file within REFGENOMEDIR. Example dbsnp_138.hg19.vcf in the GATK bundle 2.8>
-INDELDIR=<name of the directory within REFGENOMEDIR that contains a vcf file for each chromosome/contig specified by the CHRNAMES parameter. These files need to be named as: *${chr_name}.vcf >
+INDELDIR=<path to the directory where indel variant files are stored>
+INDELSLIST=<space-separated list of indel vcfs in INDELDIR>
 OMNI=<name of the omni variants file. Example: 1000G_omni2.5.hg19.sites.vcf in the GATK bundle 2.8>
 
 
 # Example entries for tools’ path in biocluster
-TRIMMOMATICDIR=/home/apps/trimmomatic/trimmomatic-0.33/trimmomatic-0.33.jar
+#TRIMMOMATICDIR=/home/apps/trimmomatic/trimmomatic-0.33/trimmomatic-0.33.jar
 FASTQCDIR=/home/apps/fastqc/fastqc-0.11.4
 BWAMEMDIR=/home/apps/bwa/bwa-0.7.15
 NOVOCRAFTDIR=/home/apps/novocraft/novocraft-3.02 

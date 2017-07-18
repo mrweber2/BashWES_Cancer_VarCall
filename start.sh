@@ -56,7 +56,6 @@ sCN=$( cat $runfile | grep -w SAMPLECN | cut -d '=' -f2 )
 sLB=$( cat $runfile | grep -w SAMPLELB | cut -d '=' -f2 )
 dup_cutoff=$( cat $runfile | grep -w  DUP_CUTOFF | cut -d '=' -f2 )
 map_cutoff=$( cat $runfile | grep -w  MAP_CUTOFF | cut -d '=' -f2 )
-indices=$( cat $runfile | grep -w CHRNAMES | cut -d '=' -f2 | tr ':' ' ' )
 analysis=$( cat $runfile | grep -w ANALYSIS | cut -d '=' -f2 | tr '[a-z]' '[A-Z]' )
 alignertool=$( cat $runfile | grep -w ALIGNERTOOL | cut -d '=' -f2 | tr '[a-z]' '[A-Z]' )
 markduplicates=$( cat $runfile | grep -w MARKDUPLICATESTOOL | cut -d '=' -f2 | tr '[a-z]' '[A-Z]' )
@@ -136,15 +135,6 @@ then
    echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
    exit 1;
 fi
-
-if [ `expr ${#indices}` -lt 1 ]
-then
-   MSG="Invalid value for CHRNAMES in the runfile"
-   echo -e "Program $0 stopped at line=$LINENO.\n\n$MSG" | mail -s "[Task #${reportticket}]" "$redmine,$email"
-   exit 1;
-fi
-
-
 
 if [ $markduplicates != "NOVOSORT" -a $markduplicates != "SAMBLASTER" -a $markduplicates != "PICARD" ]
 then
@@ -353,8 +343,8 @@ set -x
 
 while read sampleLine
 do
-    if [ `expr ${#sampleLine}` -lt 1 ]
-    then
+   if [ `expr ${#sampleLine}` -lt 1 ]
+   then
 	set +x 
 	echo -e "\n\n########################################################################################" >&2
 	echo -e "##############                 skipping empty line        ##############################" >&2
@@ -466,20 +456,22 @@ do
 	echo -e "########################################################################################\n\n" >&2
 	set -x
 
-        if [ $analysis == "VC_WITH_MUTECT" -o $analysis == "MUTECT_ALIGNMENT" -o $analysis == "MUTECT_VC" -o $analysis == "MUTECT"]
-        then
-           echo "nohup $scriptdir/align_dedup.sh $runfile ${sample} $FQ_TR1 $FQ_TR2 $FQ_NR1 $FQ_NR2 $TopOutputLogs/${sample}/log.alignDedup.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.alignDedup.${sample}" > $TopOutputLogs/${sample}/command.$analysis.${sample}
-	   echo "nohup $scriptdir/recal_varcall_MuTect_WES.sh $runfile ${sample} $TopOutputLogs/${sample}/log.recalVcall.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.recalVcall.${sample}" >> $TopOutputLogs/${sample}/command.$analysis.${sample}
-        else
-	   echo -e "Program $0 stopped at line=$LINENO. \n\nMuTect Analysis not specified in runfile, or specified incorrectly as $analysis. For variant calling with MuTect2, set ANALYSIS in runfile to VC_WITH_MUTECT." | mail -s "[Task #${reportticket}]" "$redmine,$email"
-	   exit 1
+      if [ $analysis == "VC_WITH_MUTECT" ]
+      then
+         echo "nohup $scriptdir/align_dedup.sh $runfile ${sample} $FQ_TR1 $FQ_TR2 $FQ_NR1 $FQ_NR2 $TopOutputLogs/${sample}/log.alignDedup.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.alignDedup.${sample}" > $TopOutputLogs/${sample}/command.$analysis.${sample}
+         echo -e "\n" >> $TopOutputLogs/${sample}/command.$analysis.${sample}
+         echo "nohup $scriptdir/recal_varcall_MuTect_WES.sh $runfile ${sample} $TopOutputLogs/${sample}/log.recalVcall.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.recalVcall.${sample}" >> $TopOutputLogs/${sample}/command.$analysis.${sample}
+      else
+         echo -e "Program $0 stopped at line=$LINENO. \n\nMuTect Analysis not specified in runfile, or specified incorrectly as $analysis. For variant calling with MuTect2, set ANALYSIS in runfile to VC_WITH_MUTECT." | mail -s "[Task #${reportticket}]" "$redmine,$email"
+         exit 1
+      fi
 #           echo "nohup $scriptdir/align_dedup.sh $runfile ${sample} $FQ_R1 $FQ_R2 $TopOutputLogs/${sample}/log.alignDedup.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.alignDedup.${sample}" > $TopOutputLogs/${sample}/command.$analysis.${sample}
 #           echo -e "\n" >> $TopOutputLogs/${sample}/command.$analysis.${sample}
 #           echo "nohup $scriptdir/recal_varcall_WES.sh $runfile ${sample} $TopOutputLogs/${sample}/log.recalVcall.${sample} $TopOutputLogs/${sample}/command.$analysis.${sample} > $TopOutputLogs/${sample}/log.recalVcall.${sample}" >> $TopOutputLogs/${sample}/command.$analysis.${sample}
-        fi
 
-        `chmod ug=rw $TopOutputLogs/${sample}/command.$analysis.${sample}`
-        echo "$TopOutputLogs/${sample} command.$analysis.${sample}" >> $TopOutputLogs/Anisimov.${analysis}.joblist
+
+       `chmod ug=rw $TopOutputLogs/${sample}/command.$analysis.${sample}`
+       echo "$TopOutputLogs/${sample} command.$analysis.${sample}" >> $TopOutputLogs/Anisimov.${analysis}.joblist
         (( inputsamplecounter++ )) # was not initiated above, so starts at zero
    fi # end non-empty line
 

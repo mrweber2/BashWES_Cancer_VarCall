@@ -84,9 +84,9 @@ To achieve the parallelization of Figure \[2\] in the realignment/recalibration 
 
 To run a specific stage of the pipeline, in addition to specifying the needed script file, the user needs to supply 2 additional files, these are the runfile and the sampleinfo files.
 
-The `sampleinformation` file contains the information about the samples to be processed by the pipeline. In its current implementation, it can analyze paired end WES/WGS data in fastq/fq/fastq.gz/fq.gz format only. These should be specified in tabular form of 3 columns separated by ‘space’, and according to the format below:
+The `sampleinformation` file contains the information about the samples to be processed by the pipeline. In its current implementation, it can analyze paired end WES/WGS data in fastq/fq/fastq.gz/fq.gz format only. These should be specified in tabular form of 5 columns separated by ‘space’, and according to the format below:
 ```
-sample_name full/path/to/read1file full/path/to/read2/file
+sample_name full/path/to/tumorread1file full/path/to/tumorread2/file full/path/to/normalread1file full/path/to/normalread2/file
 ```
 The `runfile` file contains all the details regarding a specific run of the pipeline, including the tools of section 2.1, resources of section 2.2, and the sampleinformation file path as well. It would change depending on the analysis type required.
 
