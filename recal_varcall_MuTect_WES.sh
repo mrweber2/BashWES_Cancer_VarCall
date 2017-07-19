@@ -188,8 +188,7 @@ cd $RealignDir
 
 for indelsFile in ${indelslist}
 do 
-   indelsExists=$( find ${indeldir} -name "${indelsFile}" )
-   if [ `expr ${#indelsExist}` -lt 1 ]
+   if [ ! -e ${indeldir}/${indelsFile} ]
    then
       MSG="indels ${indelsFile} were not found in ${indeldir}"
       echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE

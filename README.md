@@ -19,11 +19,11 @@ class="anchor"></span>![](./media/BP_somatic_workflow_M2.png)
 
 Figure 1: Best Practices for tumor/normal variant calling in Whole Genomes and Exomes
 
-Under the hood, this pipeline splits and merges files at different stages to achieve optimal usage of resources. This parallelization of data processing (OLD, will update) is shown in Figure \[2\] below:
+The suggested pipeline to follow the GATK's best practices is shown in Figure \[2\] below:
 
-![](./media/image01.png)
+![](./media/MuTect_pipeline.png)
 
-Figure 2: Pipeline details. Note: the processing can be split by individual sequences in the reference FASTA file, which could be individual chromosomes, scaffolds, contigs, etc.
+Figure 2: Pipeline details. Note: Align with BWA mem, mark duplicates with Picard MarkDuplicates, Recalibrate bams with GATK BaseRecalibrator, call variants with MuTect2.
 
 1.2. Workflow assumptions
 
