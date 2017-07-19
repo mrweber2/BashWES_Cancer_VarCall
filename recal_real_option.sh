@@ -188,21 +188,135 @@ cd $RealignDir
 
 for indelsFile in ${indelslist}
 do 
-	if [ ! -e ${indeldir}/${indelsFile} ]; then
-		MSG="indels ${indelsFile} were not found in ${indeldir}"
-		echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
-		exit 1;
-	else
-	recalparmsindels="${recalparmsindels} -knownSites ${indeldir}/${indelsFile}"  
-	realparms="${realparms} -known ${indeldir}/${indelsFile}"  
-	fi
+   if [ ! -e ${indeldir}/${indelsFile} ]
+   then
+      MSG="indels ${indelsFile} were not found in ${indeldir}"
+      echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
+      exit 1;
+   fi
+   recalparmsindels="${recalparmsindels} -knownSites ${indeldir}/${indelsFile}"  
+   realparms="${realparms} -known ${indeldir}/${indelsFile}"  
 done
 
 recalparmsdbsnp="-knownSites ${dbsnpdir}/${dbsnp}"
  
-realignedtumorbam=$dedupsortedtumorbam	#if no realignment required, then use the dedupsortedbam file as input to the next step. This is to avoid introducing a new variable
-realignednormalbam=$dedupsortednormalbam
 
+############################## Indel realignment should be added as an optional stage to the pipeline. This requires adding a variable to the runfile, and also changing the output file name 
+
+set +x
+echo -e "########### command one: executing GATK RealignerTargetCreator using known indels ####" 
+echo -e "##################################################################################\n\n"
+set -x
+
+if [ $analysis == "MUTECT_WITH_REALIGN" ]
+then 
+	$javadir/java -Xmx8g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.jar\
+       		-R $ref_local\
+       		-I $inputtumorbam\
+       		-T RealignerTargetCreator\
+       		-nt $thr\
+       		$realparms\
+       		-o ${SampleName}.realignTargetCreator.intervals
+	
+        $javadir/java -Xmx8g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.jar\
+                -R $ref_local\
+                -I $inputnormalbam\
+                -T RealignerTargetCreator\
+                -nt $thr\
+                $realparms\
+                -o ${SampleName}.realignTargetCreator.intervals
+
+	exitcode=$?
+	echo `date`
+	if [ $exitcode -ne 0 ] 
+	 then
+       		MSG="RealignerTargetCreator command failed exitcode=$exitcode. realignment for sample $SampleName.$chr. stopped"
+       		echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
+       		exit $exitcode;
+	fi
+
+	if [ ! -s ${SampleName}.realignTargetCreator.intervals ] 	
+	 then
+       		echo -e "${SampleName}\tREALIGNMENT\tWARN\t${SampleName}.RealignTargetCreator.intervals is an empty file. Skipping Indel realignment cmd\n" >> $qctumorfile
+        if [ ! -s ${SampleName}.realignTargetCreator.intervals ]       
+	 then
+                echo -e "${SampleName}\tREALIGNMENT\tWARN\t${SampleName}.RealignTargetCreator.intervals is an empty file. Skipping Indel realignment cmd\n" >> $qcnormalfile
+	else 
+		set +x
+		echo -e "\n\n##################################################################################" 
+		echo -e "########### command two: executing GATK IndelRealigner and generating BAM    #####"
+		echo -e "##################################################################################\n\n"
+		set -x
+		$javadir/java -Xmx8g -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.jar \
+      			-R $ref_local -I $dedupsortedtumorbam -T IndelRealigner $realparms \
+      			--targetIntervals ${SampleName}.realignTargetCreator.intervals \
+      			-o $realignedtumorbam
+		
+		exitcode=$?
+                $javadir/java -Xmx8g -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.jar \
+                        -R $ref_local -I $dedupsortednormalbam -T IndelRealigner $realparms \
+                        --targetIntervals ${SampleName}.realignTargetCreator.intervals \
+                        -o $realignednormalbam
+
+                exitcode=$?
+		set +x
+		echo -e "\n\n##################################################################################" 
+		echo -e "########### command three: sanity check for GATK IndelRealigner                  #####"
+		echo -e "##################################################################################\n\n"
+		set -x
+		echo `date`
+		if [ $exitcode -ne 0 ]; then
+       			MSG="indelrealigner command failed exitcode=$exitcode. realignment for sample $SampleName stopped"
+       			echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
+       			exit $exitcode;
+		fi
+		
+		if [ -s $realignedtumorbam ]; then
+	    		set +x		     
+	    		echo -e "### the file was created. But we are not done.     #############"
+	    		echo -e "### sometimes we may have a BAM file with NO alignmnets      ###"
+	    		set -x 			
+	    		numtumorAlignments=$( $samtoolsdir/samtools view -c $realignedtumorbam ) 
+	    		echo `date`
+	    		if [ $numtumorAlignments -eq 0 ]; then
+				echo -e "${SampleName}\tREALIGNMENT\tFAIL\tGATK IndelRealigner command did not produce alignments for $realignedtumorbam\n" >> $qctumorfile	    
+				MSG="GATK IndelRealigner command did not produce alignments for $realignedtumorbam"
+				echo -e "$MSGS" >> ${rootdir}/logs/mail.${analysis}.FAILURE
+				exit 1;
+	    		else
+				echo -e "####### $realignedtumorbam seems to be in order ###########"
+	    		fi
+		else 
+	    		MSG="indelrealigner command did not produce a file $realignedtumorbam"
+	    		echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE        
+	    		exit 1;          
+		fi
+                if [ -s $realignednormalbam ]; then
+                        set +x               
+                        echo -e "### the file was created. But we are not done.     #############"
+                        echo -e "### sometimes we may have a BAM file with NO alignmnets      ###"
+                        set -x                  
+                        numnormalAlignments=$( $samtoolsdir/samtools view -c $realignednormalbam )
+                        echo `date`
+                        if [ $numnormalAlignments -eq 0 ]; then
+                                echo -e "${SampleName}\tREALIGNMENT\tFAIL\tGATK IndelRealigner command did not produce alignments for $realignednormalbam\n" >> $qcnormalfile
+                                MSG="GATK IndelRealigner command did not produce alignments for $realignednormalbam"
+                                echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
+                                exit 1;
+                        else
+                                echo -e "####### $realignednormalbam seems to be in order ###########"
+                        fi
+                else
+                        MSG="indelrealigner command did not produce a file $realignednormalbam"
+                        echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE        
+                        exit 1;
+                fi
+
+	fi
+else 
+	realignedtumorbam=$dedupsortedtumorbam	#if no realignment required, then use the dedupsortedbam file as input to the next step. This is to avoid introducing a new variable
+	realignednormalbam=$dedupsortednormalbam
+fi
 
 echo `date`     
 set +x
