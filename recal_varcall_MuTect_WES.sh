@@ -70,7 +70,7 @@ set -x
 
 SampleDir=$outputdir
 AlignDir=$outputdir/align
-RealignDir=$outputdir/recal
+RealignDir=$outputdir/align
 VarcallDir=$outputdir/variant
 DeliveryDir=$rootdir/$deliverydir/$SampleName
 
@@ -188,23 +188,21 @@ cd $RealignDir
 
 for indelsFile in ${indelslist}
 do 
-	if [ ! -e ${indeldir}/${indelsFile} ]; then
-		MSG="indels ${indelsFile} were not found in ${indeldir}"
-		echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
-		exit 1;
-	else
-	recalparmsindels="${recalparmsindels} -knownSites ${indeldir}/${indelsFile}"  
-	realparms="${realparms} -known ${indeldir}/${indelsFile}"  
-	fi
+   if [ ! -e ${indeldir}/${indelsFile} ]
+   then
+      MSG="indels ${indelsFile} were not found in ${indeldir}"
+      echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
+      exit 1;
+   fi
+   recalparmsindels="${recalparmsindels} -knownSites ${indeldir}/${indelsFile}"  
+   realparms="${realparms} -known ${indeldir}/${indelsFile}"  
 done
 
 recalparmsdbsnp="-knownSites ${dbsnpdir}/${dbsnp}"
- 
-realignedtumorbam=$dedupsortedtumorbam	#if no realignment required, then use the dedupsortedbam file as input to the next step. This is to avoid introducing a new variable
+
+realignedtumorbam=$dedupsortedtumorbam #if no realignment required, then use the dedupsortedbam file as input to the next step. This is to avoid introducing a new variable
 realignednormalbam=$dedupsortednormalbam
 
-
-echo `date`     
 set +x
 echo -e "\n\n##################################################################################" 
 echo -e "########### command four: run GATK BaseRecalibrator using known indels and dbSNP    ##"
@@ -218,8 +216,8 @@ $javadir/java -Xmx16g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.j
 	 $recalparmsdbsnp \
          --out $SampleName.tumor.recal_report.grp \
          -nct $thr 
-
 exitcode=$?
+chmod ug=rw $SampleName.tumor_recal_report.grp
 
 $javadir/java -Xmx16g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.jar \
          -T BaseRecalibrator \
@@ -229,8 +227,8 @@ $javadir/java -Xmx16g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.j
          $recalparmsdbsnp \
          --out $SampleName.normal.recal_report.grp \
          -nct $thr
-
 exitcode=$?
+chmod ug=rw $SampleName.normal.recal_report.grp
 
 echo `date`
 if [ $exitcode -ne 0 ]
@@ -261,17 +259,18 @@ else
                 -BQSR $SampleName.tumor.recal_report.grp \
                 --out $recalibratedtumorbam \
                 -nct $thr
-
         exitcode=$?
+        chmod ug=rw $recalibratedtumorbam
+
         $javadir/java -Xmx8g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.jar \
                 -R $ref_local \
-                -I $realignedtumorbam \
+                -I $realignednormalbam \
                 -T PrintReads \
-                -BQSR $SampleName.tumor.recal_report.grp \
-                --out $recalibratedtumorbam \
+                -BQSR $SampleName.normal.recal_report.grp \
+                --out $recalibratednormalbam \
                 -nct $thr
-
         exitcode=$?
+        chmod ug=rw $recalibratednormalbam
 
 	set +x
 	echo -e "\n\n##################################################################################" 
@@ -371,24 +370,24 @@ $javadir/java -Xmx16g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.j
 	 --sample_ploidy $ploidy \
 	 -nct $thr \
 	 -L $intervals\
-	 -o $rawvariant
+	 -o $VarcallDir/$rawvariant
 
 
 exitcode=$?
-chmod ug=rw $rawvariant
+chmod ug=rw $VarcallDir/$rawvariant
 echo `date`
 
-if [ $exitcode -ne 0 ]
+if [ $exitcode -ne 0 ]i
 then
 	MSG="MuTect2 command failed exitcode=$exitcode for $rawvariant"
-	echo -e "$MSG" >> $MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE 
+        echo -e "$MSG" >> $MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE 
 	exit $exitcode;
 fi
 if [ ! -s $rawvariant ]
 then
 	echo -e "${SampleName}\tVCALL\tFAIL\tMuTect2 command did not produce results for $rawvariant\n" >> $qctumorfile	    
 	MSG="MuTect2 command did not produce results for $rawvariant"
-	echo -e "$MSG" >> $MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
+        echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE
 	exit 1;
 fi
 set +x
@@ -414,7 +413,7 @@ echo `date`
 set +x
 echo `date`
 echo -e "\n\n##################################################################################"
-echo -e "#############    DONE PROCESSING SAMPLE $SampleName"
+echo -e "#############    DONE CALLING VARIANTS ON SAMPLE $SampleName"
 echo -e "##################################################################################\n\n"
 set -x
 
@@ -423,3 +422,4 @@ echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.SUCCESS
 
 `find . -type d | xargs chmod -R 770`
 `find . -type f | xargs chmod -R 660`
+
