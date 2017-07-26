@@ -235,7 +235,7 @@ if [ $exitcode -ne 0 ]
 then
 	MSG="BaseRecalibrator command failed exitcode=$exitcode. recalibration for sample $SampleName stopped"
 	echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE 
-	exit $exitcode;
+#	exit $exitcode;
 fi
 if [ ! -s $SampleName.tumor.recal_report.grp ]
 then
@@ -380,7 +380,7 @@ echo `date`
 if [ $exitcode -ne 0 ]i
 then
 	MSG="MuTect2 command failed exitcode=$exitcode for $rawvariant"
-        echo -e "$MSG" >> $MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE 
+        echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE 
 	exit $exitcode;
 fi
 if [ ! -s $rawvariant ]
