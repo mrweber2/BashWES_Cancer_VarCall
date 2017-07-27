@@ -235,13 +235,13 @@ if [ $exitcode -ne 0 ]
 then
 	MSG="BaseRecalibrator command failed exitcode=$exitcode. recalibration for sample $SampleName stopped"
 	echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE 
-#	exit $exitcode;
+	exit $exitcode;
 fi
 if [ ! -s $SampleName.tumor.recal_report.grp ]
 then
 	echo -e "${SampleName}\tRECALIBRATION\tWARN\t$SampleName.tumor.recal_report.grp is an empty file. Skipping recalibration cmd\n" >> $qctumorfile
         ln -s $dedupsortedtumorbam $RealignDir/$recalibratedtumorbam
-if [ ! -s $SampleName.normal.recal_report.grp ]
+elif [ ! -s $SampleName.normal.recal_report.grp ]
 then
         echo -e "${SampleName}\tRECALIBRATION\tWARN\t$SampleName.normal.tumor.recal_report.grp is an empty file. Skipping recalibration cmd\n" >> $qcnormalfile
         ln -s $dedupsortednormalbam $RealignDir/$recalibratednormalbam
@@ -362,19 +362,15 @@ $javadir/java -Xmx16g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.j
 	 --dbsnp ${dbsnpdir}/${dbsnp} \
 	 -I:tumor $RealignDir/$recalibratedtumorbam \
          -I:normal $RealignDir/$recalibratednormalbam \
-#	 --emitRefConfidence GVCF \
 	 -gt_mode DISCOVERY \
-	 -A Coverage -A FisherStrand -A StrandOddsRatio -A HaplotypeScore -A MappingQualityRankSumTest -A QualByDepth -A RMSMappingQuality -A ReadPosRankSumTest \
-	 -stand_call_conf 30 \
-#	 -stand_emit_conf 30 \
 	 --sample_ploidy $ploidy \
 	 -nct $thr \
 	 -L $intervals\
-	 -o $VarcallDir/$rawvariant
+	 -o $rawvariant
 
 
 exitcode=$?
-chmod ug=rw $VarcallDir/$rawvariant
+chmod ug=rw $rawvariant
 echo `date`
 
 if [ $exitcode -ne 0 ]i
@@ -409,7 +405,7 @@ echo `date`
 #cp $RealignDir/${SampleName}.$chr.recalibrated.bam   $DeliveryDir
 
 # we will merge all variant files for this sample and copy that file to delivery
-#cp $VarcallDir/rawvariant=${SampleName}.$chr.raw.vcf $DeliveryDir  
+cp $rawvariant $DeliveryDir  
 set +x
 echo `date`
 echo -e "\n\n##################################################################################"
