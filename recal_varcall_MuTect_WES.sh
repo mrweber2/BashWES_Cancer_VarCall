@@ -373,7 +373,7 @@ exitcode=$?
 chmod ug=rw $rawvariant
 echo `date`
 
-if [ $exitcode -ne 0 ]i
+if [ $exitcode -ne 0 ]
 then
 	MSG="MuTect2 command failed exitcode=$exitcode for $rawvariant"
         echo -e "$MSG" >> ${rootdir}/logs/mail.${analysis}.FAILURE 
