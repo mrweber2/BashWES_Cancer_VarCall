@@ -3,7 +3,7 @@ July 2017
 1 Pipeline architecture and function
 ====================================
 
-This pipeline is modified from the Bash WES variant calling pipeline found here: [BashWES_VarCall_BW](https://github.com/HPCBio/BashWES_VarCall_BW). We implement the [GATK's best practices](https://software.broadinstitute.org/gatk/best-practices/) for tumor/normal variant calling with MuTect2 in Whole Exome Next Generation Sequencing datasets, given a cohort of samples.
+This pipeline is modified from the Bash WES variant calling pipeline built for Blue Waters found here: [BashWES_VarCall_BW](https://github.com/HPCBio/BashWES_VarCall_BW). We implement the [GATK's best practices](https://software.broadinstitute.org/gatk/best-practices/) for tumor/normal variant calling with MuTect2 in Whole Exome Next Generation Sequencing datasets, given a cohort of samples.
 
 In its latest version, 3.7, the best practices include the stages shown in Figure \[1\] below, which are:
 
@@ -27,7 +27,7 @@ Figure 2: Pipeline details. Note: Align with BWA mem, mark duplicates with Picar
 
 1.2. Workflow assumptions
 
-- Inputs are fastq not bam (the RESORTBAM is not active)
+- Inputs are fastq, not bam (the RESORTBAM is not active)
 - Temporary files are not removed (the REMOVETEMPFILES is not active)
 - The AnisimovLauncher is used in this workflow
 - To allow for adapter trimming using trimmomatic, the following variables are needed in the runfile: SAMPLEINFORMATION, OUTPUTDIR, TMPDIR, ADAPTERS, FASTQCDIR, TRIMMOMATICDIR, in addition to PBS torque parameters: ALLOCATION, PBSCORES, PBSNODES, PBSQUEUE, PBSWALLTIME and EMAIL
@@ -53,8 +53,7 @@ Table 1: Pipeline tools
 |  Indel realignment  |         [GATK](https://software.broadinstitute.org/gatk/download/) |
 |  Base recalibration  |        [GATK](https://software.broadinstitute.org/gatk/download/) |
 |  Calling variants  |         GATK [HaplotypeCaller](https://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php) |
-|  Calling tumor/normal variants | GATK [MuTect2](https://software.broadinstitute.org/gatk/best-practices/mutect2.php)
-|  Joint calling of variants  | GATK ([GenotypeGVCFs](https://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_variantutils_GenotypeGVCFs.php) ) |
+|  Calling tumor/normal variants | GATK [MuTect2](https://software.broadinstitute.org/gatk/best-practices/mutect2.php) |
 |  Miscellaneous      |         [Samtools](http://samtools.github.io/).  Note: one alternative to samtools (and marking duplicates) is *sambamba*, but it is *not currently implemented* in the code.|
  
 
