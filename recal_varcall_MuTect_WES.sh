@@ -217,7 +217,7 @@ $javadir/java -Xmx16g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.j
          --out $SampleName.tumor.recal_report.grp \
          -nct $thr 
 exitcode=$?
-chmod ug=rw $SampleName.tumor_recal_report.grp
+chmod ug=rw $SampleName.tumor.recal_report.grp
 
 $javadir/java -Xmx16g  -Djava.io.tmpdir=$tmpdir -jar $gatkdir/GenomeAnalysisTK.jar \
          -T BaseRecalibrator \
